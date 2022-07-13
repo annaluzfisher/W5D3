@@ -70,6 +70,40 @@ attr_reader :id, :question_id, :user_id
         @user_id = options['user_id']
     end
 
+    def self.likers_for_question_id(question_id)
+         data = QuestionsDB.instance.execute ("
+            SELECT *
+            FROM users u
+            join question_likes ql
+            on u.id = ql.user_id
+            WHERE ql.question_id = #{question_id}
+            ")
+            data.map {|datum| User.new(datum)}
+    end
+
+     def self.num_likers_for_question_id(question_id)
+         data = QuestionsDB.instance.execute ("
+            SELECT count(*)
+            FROM users u
+            join question_likes ql
+            on u.id = ql.user_id
+            WHERE ql.question_id = #{question_id}
+            ")
+            data[0].values[0]
+    end
+
+    def self.liked_questions_for_user_id(user_id)
+        data = QuestionsDB.instance.execute ("
+            SELECT *
+            FROM questions q
+            join question_likes ql
+            on q.id = ql.question_id
+            WHERE ql.user_id = #{user_id}
+            ")
+            return "user has liked no questions" if data == []
+            data.map {|datum| Question.new(datum)}
+    end
+
 end
 
 class Replie < Model
@@ -132,10 +166,26 @@ class Question_follow < Model
             data.map {|datum| Question.new(datum)}
     end
 
+    def self.most_followed_question(n)
+        data = QuestionsDB.instance.execute ("
+           SELECT *
+           FROM questions
+           WHERE title IN
+            ( SELECT q.title
+            FROM questions q
+            join question_follows qf
+            ON q.id = qf.question_id
+            GROUP BY q.title
+            ORDER BY COUNT(*) DESC
+            LIMIT #{n} )
+            ")
+
+            data.map {|datum| Question.new(datum)}
+    end
 
 end
 
-qf = Question_follow.followed_questions_for_user_id(3)
-qf.each do |question|
-    puts "#{question.body}"
-end
+
+
+
+p Question_like.liked_questions_for_user_id(3)
