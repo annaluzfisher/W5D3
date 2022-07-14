@@ -58,6 +58,26 @@ attr_reader :id, :fname, :lname
         Question_follow.followed_questions_for_user_id(self.id)
     end
 
+    def save
+        if(!self.id)
+            QuestionsDB.instance.execute(<<-SQL, self.fname, self.lname)
+            INSERT INTO
+                users (fname, lname)
+            VALUES
+                (?, ?)
+            SQL
+            @id = QuestionsDB.instance.last_insert_row_id
+        else
+            QuestionsDB.instance.execute(<<-SQL, self.fname, self.lname, self.id)
+            UPDATE
+                users
+            SET
+                fname = ?, lname = ?
+            WHERE
+                id = ?
+            SQL
+        end
+    end        
 
 end
 
@@ -188,4 +208,8 @@ end
 
 
 
-p Question_like.liked_questions_for_user_id(3)
+# p Question_like.liked_questions_for_user_id(3)
+
+# ryan = User.new({'fname'=> 'Ryan', 'lname'=> 'Mullen', 'id' => 5})
+# p ryan.fname
+# ryan.save
